@@ -20,6 +20,8 @@ import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 
 import static org.spockframework.runtime.RunStatus.*;
+
+import org.junit.internal.AssumptionViolatedException;
 import org.spockframework.runtime.extension.IMethodInterceptor;
 import org.spockframework.runtime.extension.MethodInvocation;
 import org.spockframework.runtime.model.*;
@@ -222,6 +224,8 @@ public class BaseSpecRunner {
     MethodInvocation invocation = new MethodInvocation(currentFeature, target, method, arguments);
     try {
       invocation.proceed();
+    }catch (AssumptionViolatedException ex){
+      supervisor.featureSkipped(currentFeature);
     } catch (Throwable t) {
       ErrorInfo error = new ErrorInfo(method, t);
       runStatus = supervisor.error(error);
@@ -233,6 +237,9 @@ public class BaseSpecRunner {
 
     try {
       return method.getReflection().invoke(target, arguments);
+    } catch (AssumptionViolatedException ex){
+      supervisor.featureSkipped(method.getFeature());
+      return null;
     } catch (InvocationTargetException e) {
       runStatus = supervisor.error(new ErrorInfo(method, e.getTargetException()));
       return null;
