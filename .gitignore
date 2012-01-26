@@ -1,3 +1,7 @@
+*.iml
+*.ipr
+.idea
+
 target
 stacktrace.log
 build
