@@ -18,12 +18,19 @@ package org.spockframework.runtime;
 
 import java.lang.reflect.Method;
 
-import static org.spockframework.runtime.RunStatus.*;
+import org.junit.internal.AssumptionViolatedException;
 import org.spockframework.runtime.extension.IMethodInterceptor;
 import org.spockframework.runtime.extension.MethodInvocation;
-import org.spockframework.runtime.model.*;
+import org.spockframework.runtime.model.ErrorInfo;
+import org.spockframework.runtime.model.FeatureInfo;
+import org.spockframework.runtime.model.IterationInfo;
+import org.spockframework.runtime.model.MethodInfo;
+import org.spockframework.runtime.model.MethodKind;
+import org.spockframework.runtime.model.SpecInfo;
 import org.spockframework.util.InternalSpockError;
 import org.spockframework.util.ReflectionUtil;
+
+import static org.spockframework.runtime.RunStatus.*;
 
 /**
  * Executes a single Spec. Notifies its supervisor about overall execution
@@ -289,9 +296,11 @@ public class BaseSpecRunner {
         currentIteration, sharedInstance, currentInstance, target, method, arguments);
     try {
       invocation.proceed();
+    } catch (AssumptionViolatedException ex) {
+        supervisor.featureSkipped(currentFeature);
     } catch (Throwable t) {
-      ErrorInfo error = new ErrorInfo(method, t);
-      runStatus = supervisor.error(error);
+        ErrorInfo error = new ErrorInfo(method, t);
+        runStatus = supervisor.error(error);
     }
   }
 
@@ -300,9 +309,12 @@ public class BaseSpecRunner {
 
     try {
       return ReflectionUtil.invokeMethod(target, method.getReflection(), arguments);
+    } catch (AssumptionViolatedException ex) {
+        supervisor.featureSkipped(method.getFeature());
+        return null;
     } catch (Throwable t) {
-      runStatus = supervisor.error(new ErrorInfo(method, t));
-      return null;
+        runStatus = supervisor.error(new ErrorInfo(method, t));
+        return null;
     }
   }
 }
